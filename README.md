@@ -14,7 +14,6 @@ Hier können Sie die aktuellsten Versionen direkt herunterladen:
 ##  Features
 
 *   **GESTIS-Anbindung**: Automatische Suche und Import von Stoffdaten, GHS-Symbolen und H/P-Sätzen.
-*   **Schnellstart**: Optimiert für schwache PCs und schnelle Ladezeiten.
 *   **PDF-Export**: Erstellen Sie professionelle Betriebsanweisungen mit einem Klick.
 *   **Modernes UI**: Übersichtliche Verwaltung von Stofflisten und Kopfdaten.
 
