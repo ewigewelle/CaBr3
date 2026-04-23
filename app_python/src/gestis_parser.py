@@ -1,4 +1,5 @@
 import re
+from bs4 import BeautifulSoup
 
 class GestisParser:
     @staticmethod
@@ -7,7 +8,6 @@ class GestisParser:
         Parses GESTIS JSON article data based on chapter numbers.
         Highly robust version using flexible regex patterns.
         """
-        from bs4 import BeautifulSoup
         if not json_data:
             return None
             

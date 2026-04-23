@@ -1,0 +1,38 @@
+import { from, map, Observable } from 'rxjs';
+import { Injectable } from '@angular/core';
+
+import * as dialog from '@tauri-apps/api/dialog';
+import * as shell from '@tauri-apps/api/shell';
+import * as tauri from '@tauri-apps/api/tauri';
+
+import { INativeService } from './native.interface';
+import { InvokeArgs } from '@tauri-apps/api/tauri';
+
+@Injectable()
+export class TauriService implements INativeService {
+  openUrl = shell.open;
+
+  open(options?: dialog.OpenDialogOptions): Observable<string> {
+    return from(dialog.open(options) as Promise<string>);
+  }
+
+  save(options?: dialog.SaveDialogOptions): Observable<string> {
+    return from(dialog.save(options)).pipe(
+      map((result) => {
+        if (result == null) {
+          throw new Error('open dialog returned null');
+        } else {
+          return result;
+        }
+      }),
+    );
+  }
+
+  promisified<T>(cmd: string, args?: InvokeArgs): Observable<T> {
+    return from(tauri.invoke<T>(cmd, args));
+  }
+}
+
+type DialogFilter = dialog.DialogFilter;
+
+export { DialogFilter };

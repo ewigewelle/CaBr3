@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['src\\main.py'],
+    ['src/main.py'],
     pathex=[],
     binaries=[],
     datas=[('assets', 'assets'), ('src/hp_library.py', '.')],
@@ -35,5 +35,11 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['assets\\logo.png'],
+    icon=['assets/logo.png'],
+)
+app = BUNDLE(
+    exe,
+    name='CaBr3.app',
+    icon='assets/logo.png',
+    bundle_identifier=None,
 )

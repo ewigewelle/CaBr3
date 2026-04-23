@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "group:monorepos"
+  ],
+  "dependencyDashboard": true,
+  "labels": ["dependencies"],
+  "enabledManagers": ["cargo"],
+  "packageRules": [
+    {
+      "matchPaths": ["*"],
+      "lockFileMaintenance": { "enabled": true }
+    },
+    {
+      "matchManagers": ["npm"],
+      "addLabels": ["typescript"]
+    },
+    {
+      "matchManagers": ["cargo"],
+      "addLabels": ["rust"]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "addLabels": ["security"],
+    "assignees": ["@crapstone"]
+  }
+}

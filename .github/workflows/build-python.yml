@@ -1,0 +1,72 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r app_python/requirements.txt
+
+    - name: Build with PyInstaller
+      run: |
+        cd app_python
+        pyinstaller CaBr3-Generator.spec --clean --noconfirm
+
+    - name: Package Artifact (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        powershell Compress-Archive -Path app_python/dist/CaBr3.exe -DestinationPath CaBr3-Windows.zip
+
+    - name: Package Artifact (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        zip -r CaBr3-macOS.zip app_python/dist/CaBr3.app
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: CaBr3-${{ matrix.os }}
+        path: |
+          CaBr3-Windows.zip
+          CaBr3-macOS.zip
+
+  release:
+    name: Create Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          artifacts/CaBr3-windows-latest/CaBr3-Windows.zip
+          artifacts/CaBr3-macos-latest/CaBr3-macOS.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

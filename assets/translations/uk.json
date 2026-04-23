@@ -1,0 +1,191 @@
+{
+    "strings": {
+        "dialogs": {
+            "unchangedValues": {
+                "footer": [
+                    "Усе одно продовжити?"
+                ],
+                "title": "Незмінні значення",
+                "content": [
+                    "Ці значення не були змінені."
+                ]
+            },
+            "pdfGeneration": {
+                "generatingPdf": "Створення PDF…",
+                "errorMessage": "Сервер не відповідає.\nЦе може бути пов'язано з кількома причинами.\nВи можете зачекати або закрити це вікно і спробувати пізніше.",
+                "downloadPdf": "Завантажити PDF",
+                "download": "Завантажити"
+            }
+        },
+        "header": {
+            "organization": "Організація:",
+            "docTitle": "Назва документа:",
+            "labCourse": "Лабораторія/Курс:",
+            "name": "Ім'я:",
+            "place": "Місце:",
+            "preparation": "Підготовка/Завдання:",
+            "assistant": "Асистент:"
+        },
+        "descriptions": {
+            "signatureFieldAssistant": "Студент допускається до виконання вказаного завдання/підготовки.",
+            "signature": "Підпис",
+            "humanAndEnvironmentDanger": "Додаткові небезпеки для людини та навколишнього середовища (наприклад, канцерогенні, тератогенні):",
+            "locationAndDate": "Місце, дата",
+            "inCaseOfDanger": "Поведінка в разі небезпеки та перша медична допомога:",
+            "disposal": "Утилізація:",
+            "humanAndEnvironmentDangerShort": "Небезпеки",
+            "rulesOfConductShort": "Заходи захисту",
+            "inCaseOfDangerShort": "Небезпечний випадок",
+            "disposalShort": "Утилізація",
+            "rulesOfConduct": "Заходи захисту та правила безпеки:",
+            "signatureFieldStudent": "Цим я підтверджую, що буду виконувати завдання/підготовку відповідно до викладених тут інструкцій з техніки безпеки."
+        },
+        "base": {
+            "addElement": "Додати запис",
+            "removeElement": "Видалити запис",
+            "cancel": "Скасувати",
+            "save": "Зберегти",
+            "close": "Закрити",
+            "ok": "Добре",
+            "print": "Друк"
+        },
+        "menu": {
+            "newDocument": "Новий паспорт безпеки",
+            "loadFile": "Відкрити паспорт безпеки",
+            "settings": "Налаштування",
+            "saveFile": "Зберегти паспорт безпеки",
+            "exportPDF": "Експорт у форматі PDF",
+            "quickStart": "Посібник"
+        },
+        "tooltips": {
+            "header": "Заголовок аркуша безпеки",
+            "search": "Пошук і вибрані речовини",
+            "securitythings": "Редагування зворотного боку аркуша безпеки",
+            "preview": "Попередній перегляд аркуша безпеки"
+        },
+        "bugreport": {
+            "sentence": "Повідомте про помилку на email:",
+            "title": "Повідомити про помилку",
+            "codebergSentence": "Крім того, ви можете створити задачу на Codeberg:"
+        },
+        "search": {
+            "editSubstance": "Редагувати речовину",
+            "unsupportedProviderInfo": "не підтримується",
+            "removeSubstance": "Видалити речовину",
+            "types": {
+                "chemicalName": "Хімічна назва",
+                "numbers": "Число",
+                "fullText": "Повний текст",
+                "chemicalFormula": "Молекулярна формула"
+            },
+            "exact": "Точний пошук",
+            "option": "Параметри пошуку:",
+            "searchButton": "Пошук",
+            "removeOption": "Видалити опцію пошуку",
+            "addOption": "Додати опцію пошуку",
+            "resultsHeader": "Результати пошуку",
+            "noResult": "{{provider}} не дав результатів.\nБудь ласка, спробуйте ще раз із синонімами або частинами слів.",
+            "disclaimer": {
+                "gestis": "Gestis рідко надає дані про продукти експериментів."
+            },
+            "customSubstance": "Користувацькі",
+            "error": "Виникла помилка під час отримання даних"
+        },
+        "substance": {
+            "signalWord": "Сигнальне слово",
+            "resetTooltip": "Скинути поточну речовину до початкових значень",
+            "boilingPoint": "Температура кипіння",
+            "pPhrases": "P-фрази",
+            "addHPhrase": "Додати H-фразу",
+            "invalidFormsContent": [
+                "Речовина має недостовірні або відсутні дані щодо таких пунктів:"
+            ],
+            "invalidFormsTitle": "Щось не так",
+            "meltingPoint": "Температура плавлення",
+            "lethalDose": "Смертельна доза",
+            "unit": "Одиниця",
+            "molarMass": "Молярна маса",
+            "waterHazardClass": "Клас небезпеки для води (WGK)",
+            "molecularFormula": "Молекулярна формула",
+            "needsName": "Ім'я обов'язкове",
+            "edited": "Відредагований?",
+            "name": "Ім'я",
+            "amount": "Кількість",
+            "notANumber": "Не число",
+            "removeHPhrase": "Видалити H-фразу",
+            "invalidHPhrase": "Неправильні H-фрази",
+            "noHPhrase": "Неправильний H-номер",
+            "noPPhrase": "Неправильний P-номер",
+            "hPhrases": "H-фрази",
+            "ghsSymbolsAddOrRemoveInfo": "Щоб видалити або додати, натисніть на символ",
+            "dragAndDrop": "перетягнути та скинути",
+            "addCustomSubstanceData": "Додати власну речовину",
+            "editingHint": "Натисніть на речовину, щоб редагувати.",
+            "addPPhrase": "Додати P-фразу",
+            "removePPhrase": "Видалити P-фразу",
+            "invalidPPhrase": "Неправильні P-фрази",
+            "phraseFormatTooltip": "Очікуваний формат: {{format}}",
+            "casNumber": "Номер CAS",
+            "ghsSymbolsColorInfo": "сірий: не вибрано / кольоровий: вибрано",
+            "customUnit": "Власні одиниці",
+            "mak": "ГДК"
+        },
+        "error": {
+            "loadSearchSuggestions": "Не вдалося завантажити пошукові пропозиції!",
+            "substanceWithCASExist": "Речовина з ідентичним номером CAS уже існує!",
+            "configLoad": "Не вдалося прочитати конфігурацію!",
+            "configSave": "Не вдалося зберегти конфігурацію!",
+            "editSubstance": "Не вдалося відредагувати речовину!",
+            "substanceLoadData": "Не вдалося завантажити дані про речовину!",
+            "getAvailableDocumentTypes": "Не вдалося завантажити доступні типи документів!",
+            "localeLoading": "Не вдалося завантажити мову!",
+            "exportPDF": "Не вдалося експортувати PDF!",
+            "saveFile": "Не вдалося зберегти файл!",
+            "getHazardSymbols": "Не вдалося завантажити символи небезпеки!",
+            "loadSearchResults": "Не вдалося завантажити результати пошуку!",
+            "loadFile": "Не вдалося завантажити файл!"
+        },
+        "settings": {
+            "language": "Мова",
+            "reloadRequired": "Потрібно перезавантажити",
+            "darkModeSwitchInfo": "Перемкнути світлу/темну тему"
+        },
+        "success": {
+            "saveFile": "Файл успішно збережено",
+            "exportPDF": "PDF успішно експортовано",
+            "loadFile": "Файл успішно завантажено"
+        },
+        "units": {
+            "groups": {
+                "custom": "Користувацькі",
+                "rawSubstance": "Сира речовина",
+                "solution": "Розчин"
+            },
+            "custom": "Користувацькі",
+            "pcs.": "шт."
+        },
+        "loadSave": {
+            "unnamedFile": "Без назви"
+        },
+        "preview": {
+            "tableMolarMassHeader": {
+                "grammPerMol": "[г/моль]",
+                "mw": "M моль"
+            },
+            "tableHPPhrasesHeader": "H/P-фрази",
+            "tableGHSSymbolHeader": "Піктограми небезпеки УГС",
+            "tableAmountHeader": "Використана кількість",
+            "tableSubstanceTitleHeader": "Використані речовини та продукти",
+            "sources": "Джерела",
+            "tableHPPhrasesTitle": "Текст основних H/P-фраз:",
+            "tableHPPhrasesNumberHeader": "(цифри)",
+            "info": "Це лише попередній перегляд. Згенерований PDF-файл може виглядати інакше!",
+            "tableBoilingHeader": "t кип.",
+            "tableMeltingHeader": "t плав.",
+            "tableMAKHeader": "ГДК, ЛД50",
+            "tableWHCHeader": "WGK"
+        }
+    },
+    "name": "Українська",
+    "locale": "uk_ua"
+}

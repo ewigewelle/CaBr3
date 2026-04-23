@@ -1,0 +1,41 @@
+[package]
+name = "webserver"
+version = "0.5.3"
+edition = "2021"
+description = 'CaBr2 backend as webserver.'
+authors = [
+  "crapStone <crapstone01@gmail.com>",
+  "6543 <6543@obermui.de>",
+]
+license = "GPLv3+"
+repository = "https://codeberg.org/Calciumdibromid/CaBr2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.22"
+serde = { version = "1.0.204", features = ["derive"] }
+tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread", "signal"] }
+uuid = { version = "1.9.1", features = ["v4"] }
+warp = { version = "0.3.7", default-features = false, features = ["compression"] }
+structopt = "0.3.26"
+once_cell = "1.19.0"
+
+config = { path = "../crates/config/", features = [ "webserver" ]}
+load_save = { path = "../crates/load_save/" }
+logger = { path = "../crates/logger/" }
+search = { path = "../crates/search/" }
+types = { path = "../crates/types/" }
+
+[features]
+portable = ["config/portable"]
+
+# load_save file types
+beryllium = ["load_save/beryllium"]
+cabr2 = ["load_save/cabr2"]
+pdf = ["load_save/pdf"]
+
+# search providers
+gestis = ["search/gestis"]
+
+default = ["beryllium", "cabr2", "pdf", "gestis"]

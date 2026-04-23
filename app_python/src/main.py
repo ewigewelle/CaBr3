@@ -3,6 +3,9 @@ import os
 import json
 import base64
 import re
+import logging
+import time
+
 # Core PySide6 imports needed for basic structure
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
@@ -15,13 +18,8 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QPixmap, QIcon, QColor
 from PySide6.QtCore import Qt, QSize, QPoint, Signal, QTimer
 
-def get_resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.join(os.path.dirname(__file__), "..")
-    return os.path.abspath(os.path.join(base_path, relative_path))
+# Local imports
+# Removed GestisClient from here to speed up startup (now lazy-loaded)
 
 def get_hp_library():
     try:
@@ -30,13 +28,21 @@ def get_hp_library():
     except ImportError:
         return {}
 
+def get_resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.join(os.path.dirname(__file__), "..")
+    return os.path.abspath(os.path.join(base_path, relative_path))
+
 STYLES = """
 QMainWindow, QDialog { background-color: #f0f2f5; }
 QWidget#Sidebar { background-color: #1a252f; min-width: 80px; max-width: 80px; }
 QPushButton#SidebarBtn { background-color: transparent; border: none; color: #95a5a6; padding: 20px; font-size: 24px; }
 QPushButton#SidebarBtn:hover { background-color: #2c3e50; color: white; }
 QPushButton#SidebarBtn[active="true"] { background-color: #3498db; color: white; }
-QFrame#Card { background-color: white; border-radius: 8px; border: none; margin-bottom: 10px; }
+QFrame#Card { background-color: white; border-radius: 8px; border: 1px solid #dcdfe6; margin-bottom: 10px; }
 QLabel#SectionTitle { font-size: 15px; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
 QLineEdit, QTextEdit { border: 1px solid #dcdfe6; border-radius: 4px; padding: 10px; background-color: #ffffff; color: #303133; font-size: 13px; }
 QLineEdit:focus { border: 1px solid #409eff; }
@@ -112,20 +118,33 @@ class CustomSubstanceDialog(QDialog):
         self.in_info = DynamicListWidget("Zusatzinfos (MAK, LD50, WGK)")
         
         if data:
-            for x in data.get("name", "").split("\n"): self.in_name.add_row(x)
+            for x in data.get("name", "").split("\n"):
+                self.in_name.add_row(x)
             self.in_mg.setText(data.get("mg", ""))
-            for x in data.get("sdp", "").split("\n"): self.in_sdp.add_row(x)
+            for x in data.get("sdp", "").split("\n"):
+                self.in_sdp.add_row(x)
             for g in data.get("ghs", "").split(","):
                 g = g.strip().lower()
-                if g in self.ghs_selectors: self.ghs_selectors[g].setChecked(True)
-            for x in data.get("hp", "").split("\n"): self.in_hp.add_row(x)
-            for x in data.get("info", "").split("\n"): self.in_info.add_row(x)
+                if g in self.ghs_selectors:
+                    self.ghs_selectors[g].setChecked(True)
+            for x in data.get("hp", "").split("\n"):
+                self.in_hp.add_row(x)
+            for x in data.get("info", "").split("\n"):
+                self.in_info.add_row(x)
         else:
             # Add initial rows only if new
-            self.in_name.add_row(""); self.in_sdp.add_row(""); self.in_hp.add_row(""); self.in_info.add_row("")
+            self.in_name.add_row("")
+            self.in_sdp.add_row("")
+            self.in_hp.add_row("")
+            self.in_info.add_row("")
 
         self.scroll_layout.addWidget(self.in_name)
-        mg_box = QWidget(); mgl = QVBoxLayout(mg_box); mgl.addWidget(QLabel("MG [g/mol]:", objectName="SectionTitle")); mgl.addWidget(self.in_mg)
+        
+        mg_box = QWidget()
+        mgl = QVBoxLayout(mg_box)
+        mgl.addWidget(QLabel("MG [g/mol]:", objectName="SectionTitle"))
+        mgl.addWidget(self.in_mg)
+        
         self.scroll_layout.addWidget(mg_box)
         self.scroll_layout.addWidget(self.in_sdp)
         self.scroll_layout.addWidget(ghs_container)
@@ -212,19 +231,22 @@ class CaBr3App(QMainWindow):
         super().__init__()
         self.splash = splash
         self.start_time = start_time
-        self._update_splash("Initialisiere... 10%", 10)
+        self._update_splash("Initialisiere...", 10)
         self.setWindowTitle("CaBr3 - Betriebsanweisungsgenerator")
+        
+        # Load logo for window icon lazily or early? Early is fine.
         self.setWindowIcon(QIcon(get_resource_path("assets/logo.png")))
         
-        # Dynamic sizing based on screen resolution
+        self._update_splash("Lade UI...", 20)
+        # Dynamic sizing
         screen = QApplication.primaryScreen().availableGeometry()
         w = min(1600, int(screen.width() * 0.9))
         h = min(950, int(screen.height() * 0.9))
         self.resize(w, h)
         self.setStyleSheet(STYLES)
-        self._update_splash("Lade Module... 20%", 20)
-        from gestis_client import GestisClient
-        self.client = GestisClient()
+        
+        # Lazy client initialization
+        self._client = None
         self.hp_library = {}
         self.data = {
             "header": "Betriebsanweisungen nach EG Nr. 1272/2008 für chemische Laboratorien der Universität Regensburg",
@@ -276,7 +298,9 @@ class CaBr3App(QMainWindow):
                 "Besondere Entsorgungsvorschriften für radioaktive Stoffe beachten."
             ]
         }
+        self._update_splash("Erstelle Benutzeroberfläche... 50%", 50)
         self.init_ui()
+        self._update_splash("Bereite Vorschau vor... 70%", 70)
         self.preview_timer = QTimer()
         self.preview_timer.setSingleShot(True)
         self.preview_timer.timeout.connect(self._do_update_preview)
@@ -288,28 +312,46 @@ class CaBr3App(QMainWindow):
         half_w = self.width() // 2
         self.splitter.setSizes([half_w, half_w])
 
+    @property
+    def client(self):
+        if self._client is None:
+            try:
+                from gestis_client import GestisClient
+                self._client = GestisClient()
+            except ImportError:
+                class GestisClient:
+                    def search(self, *args, **kwargs): return []
+                    def get_article(self, *args, **kwargs): return None
+                self._client = GestisClient()
+        return self._client
+
     def _deferred_startup(self):
-        self._update_splash("Lade Standardwerte... 70%", 70)
+        self._update_splash("Lade Standardwerte... 85%", 85)
         self.load_defaults()
-        self._update_splash("Bereit... 100%", 100)
+        self._update_splash("Finalisiere... 95%", 95)
         
         # Ensure splash is visible for at least 3 seconds
-        if self.start_time:
-            import time
+        if self.splash and self.start_time:
             elapsed = time.time() - self.start_time
             remaining = max(0, 3.0 - elapsed)
+            
+            # Show 100% just before finishing
+            def complete():
+                self._update_splash("Bereit... 100%", 100)
+                QTimer.singleShot(200, self._finish_splash)
+
             if remaining > 0:
-                QTimer.singleShot(int(remaining * 1000), self._finish_splash)
+                QTimer.singleShot(int(remaining * 1000), complete)
             else:
-                self._finish_splash()
+                complete()
         else:
             self._finish_splash()
 
     def _finish_splash(self):
+        self.show()
         if self.splash:
             self.splash.finish(self)
             self.splash = None
-        self.show()
 
     def _update_splash(self, msg, progress=None):
         if self.splash:
@@ -329,27 +371,58 @@ class CaBr3App(QMainWindow):
         self.sync_text() # Sync initial state to data and preview
 
     def create_shadow(self):
-        shadow = QGraphicsDropShadowEffect(); shadow.setBlurRadius(15); shadow.setXOffset(0); shadow.setYOffset(2); shadow.setColor(QColor(0,0,0,40))
-        return shadow
+        # Disabled for better performance on weak PCs
+        return None
 
     def init_ui(self):
-        central = QWidget(); self.setCentralWidget(central); layout = QHBoxLayout(central); layout.setContentsMargins(0, 0, 0, 0); layout.setSpacing(0)
-        sidebar = QWidget(); sidebar.setObjectName("Sidebar"); side_layout = QVBoxLayout(sidebar); side_layout.setContentsMargins(0, 10, 0, 10)
-        self.btn_home = QPushButton("🏠"); self.btn_home.setObjectName("SidebarBtn"); self.btn_home.setProperty("active", True)
-        self.btn_chem = QPushButton("🧪"); self.btn_chem.setObjectName("SidebarBtn")
-        self.btn_text = QPushButton("📝"); self.btn_text.setObjectName("SidebarBtn")
-        self.btn_save = QPushButton("💾"); self.btn_save.setObjectName("SidebarBtn"); self.btn_save.setToolTip("Projekt speichern")
-        self.btn_load = QPushButton("📂"); self.btn_load.setObjectName("SidebarBtn"); self.btn_load.setToolTip("Projekt laden")
-        side_layout.addWidget(self.btn_home); side_layout.addWidget(self.btn_chem); side_layout.addWidget(self.btn_text)
-        side_layout.addSpacing(20)
-        side_layout.addWidget(self.btn_save); side_layout.addWidget(self.btn_load)
-        side_layout.addStretch(); layout.addWidget(sidebar)
+        central = QWidget()
+        self.setCentralWidget(central)
+        layout = QHBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        self.splitter = QSplitter(Qt.Horizontal); self.stack = QStackedWidget(); self.stack.setContentsMargins(15, 15, 15, 15)
-        self.init_pages(); self.splitter.addWidget(self.stack)
+        sidebar = QWidget()
+        sidebar.setObjectName("Sidebar")
+        side_layout = QVBoxLayout(sidebar)
+        side_layout.setContentsMargins(0, 10, 0, 10)
+
+        self.btn_home = QPushButton("🏠")
+        self.btn_home.setObjectName("SidebarBtn")
+        self.btn_home.setProperty("active", True)
+
+        self.btn_chem = QPushButton("🧪")
+        self.btn_chem.setObjectName("SidebarBtn")
+
+        self.btn_text = QPushButton("📝")
+        self.btn_text.setObjectName("SidebarBtn")
+
+        self.btn_save = QPushButton("💾")
+        self.btn_save.setObjectName("SidebarBtn")
+        self.btn_save.setToolTip("Projekt speichern")
+
+        self.btn_load = QPushButton("📂")
+        self.btn_load.setObjectName("SidebarBtn")
+        self.btn_load.setToolTip("Projekt laden")
+
+        side_layout.addWidget(self.btn_home)
+        side_layout.addWidget(self.btn_chem)
+        side_layout.addWidget(self.btn_text)
+        side_layout.addSpacing(20)
+        side_layout.addWidget(self.btn_save)
+        side_layout.addWidget(self.btn_load)
+        side_layout.addStretch()
+        layout.addWidget(sidebar)
+
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.stack = QStackedWidget()
+        self.stack.setContentsMargins(15, 15, 15, 15)
+        self.init_pages()
+        self.splitter.addWidget(self.stack)
         
         # Lazy load QWebEngineView
-        self.preview_container = QWidget(); self.preview_layout = QVBoxLayout(self.preview_container); self.preview_layout.setContentsMargins(15, 15, 15, 15)
+        self.preview_container = QWidget()
+        self.preview_layout = QVBoxLayout(self.preview_container)
+        self.preview_layout.setContentsMargins(15, 15, 15, 15)
         self.btn_load_preview = QPushButton("Vorschau generieren")
         self.btn_load_preview.setObjectName("ExportBtn")
         self.btn_load_preview.setMinimumHeight(60)
@@ -359,11 +432,18 @@ class CaBr3App(QMainWindow):
         self.preview_layout.addStretch()
         self.preview = None
         
-        self.splitter.addWidget(self.preview_container); layout.addWidget(self.splitter)
+        self.splitter.addWidget(self.preview_container)
+        layout.addWidget(self.splitter)
 
-        self.results = QListWidget(self); self.results.setObjectName("SearchResults"); self.results.setGraphicsEffect(self.create_shadow()); self.results.hide()
+        self.results = QListWidget(self)
+        self.results.setObjectName("SearchResults")
+        self.results.setGraphicsEffect(self.create_shadow())
+        self.results.hide()
         self.results.itemDoubleClicked.connect(self.add_from_search)
-        self.btn_home.clicked.connect(lambda: self.switch_page(0)); self.btn_chem.clicked.connect(lambda: self.switch_page(1)); self.btn_text.clicked.connect(lambda: self.switch_page(2))
+        
+        self.btn_home.clicked.connect(lambda: self.switch_page(0))
+        self.btn_chem.clicked.connect(lambda: self.switch_page(1))
+        self.btn_text.clicked.connect(lambda: self.switch_page(2))
         self.btn_save.clicked.connect(self.save_project)
         self.btn_load.clicked.connect(self.load_project)
 
@@ -397,60 +477,165 @@ class CaBr3App(QMainWindow):
 
     def init_pages(self):
         # Page 0: Kopfdaten
-        p1 = QWidget(); l1 = QVBoxLayout(p1); scroll = QScrollArea(); scroll.setWidgetResizable(True); scroll.setFrameShape(QFrame.NoFrame)
-        scroll_content = QWidget(); sl = QVBoxLayout(scroll_content)
-        card = QFrame(); card.setObjectName("Card"); card.setGraphicsEffect(self.create_shadow()); cl = QVBoxLayout(card)
-        cl.setContentsMargins(20, 20, 20, 20); cl.addWidget(QLabel("Kopfdaten", objectName="SectionTitle"))
+        p1 = QWidget()
+        l1 = QVBoxLayout(p1)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll_content = QWidget()
+        sl = QVBoxLayout(scroll_content)
+        card = QFrame()
+        card.setObjectName("Card")
+        card.setGraphicsEffect(self.create_shadow())
+        cl = QVBoxLayout(card)
+        cl.setContentsMargins(20, 20, 20, 20)
+        cl.addWidget(QLabel("Kopfdaten", objectName="SectionTitle"))
         
-        self.in_header = QLineEdit(self.data["header"]); self.in_header.setPlaceholderText("Titel des Dokuments")
-        self.in_praktikum = QLineEdit(self.data["praktikum"]); self.in_assistent = QLineEdit(self.data["assistent"]); self.in_name = QLineEdit(self.data["name"]); self.in_platz = QLineEdit(self.data["platz"]); self.in_praeparat = QLineEdit(self.data["praeparat"])
+        self.in_header = QLineEdit(self.data["header"])
+        self.in_header.setPlaceholderText("Titel des Dokuments")
+        self.in_praktikum = QLineEdit(self.data["praktikum"])
+        self.in_assistent = QLineEdit(self.data["assistent"])
+        self.in_name = QLineEdit(self.data["name"])
+        self.in_platz = QLineEdit(self.data["platz"])
+        self.in_praeparat = QLineEdit(self.data["praeparat"])
         
-        for lbl, w in [("Dokument-Titel:", self.in_header), ("Praktikum:", self.in_praktikum), ("Assistent:", self.in_assistent), ("Name:", self.in_name), ("Platz:", self.in_platz), ("Präparat:", self.in_praeparat)]:
-            cl.addWidget(QLabel(lbl)); cl.addWidget(w); w.textChanged.connect(self.sync_data)
+        fields = [
+            ("Dokument-Titel:", self.in_header),
+            ("Praktikum:", self.in_praktikum),
+            ("Assistent:", self.in_assistent),
+            ("Name:", self.in_name),
+            ("Platz:", self.in_platz),
+            ("Präparat:", self.in_praeparat)
+        ]
+        for lbl, w in fields:
+            cl.addWidget(QLabel(lbl))
+            cl.addWidget(w)
+            w.textChanged.connect(self.sync_data)
         
-        sl.addWidget(card); sl.addStretch(); scroll.setWidget(scroll_content); l1.addWidget(scroll)
-        btn_layout = QHBoxLayout(); btn_export = QPushButton("ALS PDF EXPORTIEREN"); btn_export.setObjectName("ExportBtn")
-        btn_layout.addStretch(); btn_layout.addWidget(btn_export); l1.addLayout(btn_layout); btn_export.clicked.connect(self.export_pdf); self.stack.addWidget(p1)
+        sl.addWidget(card)
+        sl.addStretch()
+        scroll.setWidget(scroll_content)
+        l1.addWidget(scroll)
+        
+        btn_layout = QHBoxLayout()
+        btn_export = QPushButton("ALS PDF EXPORTIEREN")
+        btn_export.setObjectName("ExportBtn")
+        btn_layout.addStretch()
+        btn_layout.addWidget(btn_export)
+        l1.addLayout(btn_layout)
+        btn_export.clicked.connect(self.export_pdf)
+        self.stack.addWidget(p1)
 
         # Page 1: GESTIS Suche & Stoffliste
-        p2 = QWidget(); l2 = QVBoxLayout(p2); scard = QFrame(); scard.setObjectName("Card"); scard.setGraphicsEffect(self.create_shadow()); sl = QVBoxLayout(scard)
-        sl.setContentsMargins(20, 20, 20, 20); sl.addWidget(QLabel("GESTIS Suche", objectName="SectionTitle")); hl = QHBoxLayout(); self.search_in = QLineEdit(); self.search_in.setPlaceholderText("Nach Stoff oder CAS suchen..."); btn_s = QPushButton("Suchen"); btn_s.setObjectName("ActionBtn")
-        hl.addWidget(self.search_in); hl.addWidget(btn_s); sl.addLayout(hl)
-        self.cb_exact = QCheckBox("Exakte Suche (nur voller Name / CAS)"); sl.addWidget(self.cb_exact)
+        p2 = QWidget()
+        l2 = QVBoxLayout(p2)
+        scard = QFrame()
+        scard.setObjectName("Card")
+        scard.setGraphicsEffect(self.create_shadow())
+        sl = QVBoxLayout(scard)
+        sl.setContentsMargins(20, 20, 20, 20)
+        sl.addWidget(QLabel("GESTIS Suche", objectName="SectionTitle"))
+        
+        hl = QHBoxLayout()
+        self.search_in = QLineEdit()
+        self.search_in.setPlaceholderText("Nach Stoff oder CAS suchen...")
+        btn_s = QPushButton("Suchen")
+        btn_s.setObjectName("ActionBtn")
+        hl.addWidget(self.search_in)
+        hl.addWidget(btn_s)
+        sl.addLayout(hl)
+        
+        self.cb_exact = QCheckBox("Exakte Suche (nur voller Name / CAS)")
+        sl.addWidget(self.cb_exact)
         l2.addWidget(scard)
         
         # Dropdown closure listener
         self.search_in.textChanged.connect(lambda t: self.results.hide() if not t else None)
         
-        tcard = QFrame(); tcard.setObjectName("Card"); tcard.setGraphicsEffect(self.create_shadow()); tl = QVBoxLayout(tcard)
-        tl.setContentsMargins(15, 15, 15, 15); tl.addWidget(QLabel("Stoffliste", objectName="SectionTitle"))
-        self.table = QTableWidget(0, 7); self.table.setAlternatingRowColors(True); self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.setHorizontalHeaderLabels(["Stoff / CAS / Formel", "MG [g/mol]", "Sdp. Smp.", "GHS-Symbole", "H/P-Sätze (Nummern)", "MAK LD50 WGK", "für Ansatz benötigt"])
+        tcard = QFrame()
+        tcard.setObjectName("Card")
+        tcard.setGraphicsEffect(self.create_shadow())
+        tl = QVBoxLayout(tcard)
+        tl.setContentsMargins(15, 15, 15, 15)
+        tl.addWidget(QLabel("Stoffliste", objectName="SectionTitle"))
+        
+        self.table = QTableWidget(0, 7)
+        self.table.setAlternatingRowColors(True)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        header_labels = [
+            "Stoff / CAS / Formel", "MG [g/mol]", "Sdp. Smp.", 
+            "GHS-Symbole", "H/P-Sätze (Nummern)", "MAK LD50 WGK", 
+            "für Ansatz benötigt"
+        ]
+        self.table.setHorizontalHeaderLabels(header_labels)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         tl.addWidget(self.table)
         
         btn_row = QHBoxLayout()
-        self.btn_del_sub = QPushButton("Stoff entfernen"); self.btn_del_sub.setObjectName("DangerBtn")
+        self.btn_del_sub = QPushButton("Stoff entfernen")
+        self.btn_del_sub.setObjectName("DangerBtn")
         self.btn_del_sub.clicked.connect(self.remove_selected_substance)
-        self.btn_edit_sub = QPushButton("Stoff bearbeiten"); self.btn_edit_sub.setObjectName("ActionBtn")
+        
+        self.btn_edit_sub = QPushButton("Stoff bearbeiten")
+        self.btn_edit_sub.setObjectName("ActionBtn")
         self.btn_edit_sub.clicked.connect(self.edit_selected_substance)
-        self.btn_add_custom = QPushButton("Eigener Stoff"); self.btn_add_custom.setObjectName("SecondaryBtn")
+        
+        self.btn_add_custom = QPushButton("Eigener Stoff")
+        self.btn_add_custom.setObjectName("SecondaryBtn")
         self.btn_add_custom.clicked.connect(self.add_custom_substance)
-        btn_row.addWidget(self.btn_del_sub); btn_row.addWidget(self.btn_edit_sub); btn_row.addStretch(); btn_row.addWidget(self.btn_add_custom)
+        
+        btn_row.addWidget(self.btn_del_sub)
+        btn_row.addWidget(self.btn_edit_sub)
+        btn_row.addStretch()
+        btn_row.addWidget(self.btn_add_custom)
         tl.addLayout(btn_row)
         
-        l2.addWidget(tcard); btn_s.clicked.connect(self.do_search); self.search_in.returnPressed.connect(self.do_search); self.table.itemChanged.connect(self.sync_table); self.stack.addWidget(p2)
+        l2.addWidget(tcard)
+        btn_s.clicked.connect(self.do_search)
+        self.search_in.returnPressed.connect(self.do_search)
+        self.table.itemChanged.connect(self.sync_table)
+        self.stack.addWidget(p2)
 
         # Page 2: Dynamische Texte
-        p3 = QWidget(); scroll_text = QScrollArea(); scroll_text.setWidgetResizable(True); scroll_text.setFrameShape(QFrame.NoFrame); p3_content = QWidget(); l3 = QVBoxLayout(p3_content)
+        p3 = QWidget()
+        scroll_text = QScrollArea()
+        scroll_text.setWidgetResizable(True)
+        scroll_text.setFrameShape(QFrame.NoFrame)
+        p3_content = QWidget()
+        l3 = QVBoxLayout(p3_content)
+        
         self.dyn_widgets = {}
-        for title, attr in [("Gefahren für Mensch und Umwelt", "gefahren"), ("Schutzmaßnahmen und Verhaltensregeln", "schutzmassnahmen"), ("Verhalten im Gefahrenfall / Erste Hilfe", "verhalten"), ("Entsorgung", "entsorgung")]:
-            c = QFrame(); c.setObjectName("Card"); c.setGraphicsEffect(self.create_shadow()); cl = QVBoxLayout(c); cl.setContentsMargins(15, 15, 15, 15)
-            dw = DynamicListWidget(title); dw.changed.connect(self.sync_text); self.dyn_widgets[attr] = dw; cl.addWidget(dw); l3.addWidget(c)
-        scroll_text.setWidget(p3_content); main_p3_layout = QVBoxLayout(p3); main_p3_layout.setContentsMargins(0,0,0,0); main_p3_layout.addWidget(scroll_text); self.stack.addWidget(p3)
+        text_pages = [
+            ("Gefahren für Mensch und Umwelt", "gefahren"),
+            ("Schutzmaßnahmen und Verhaltensregeln", "schutzmassnahmen"),
+            ("Verhalten im Gefahrenfall / Erste Hilfe", "verhalten"),
+            ("Entsorgung", "entsorgung")
+        ]
+        for title, attr in text_pages:
+            c = QFrame()
+            c.setObjectName("Card")
+            c.setGraphicsEffect(self.create_shadow())
+            cl = QVBoxLayout(c)
+            cl.setContentsMargins(15, 15, 15, 15)
+            dw = DynamicListWidget(title)
+            dw.changed.connect(self.sync_text)
+            self.dyn_widgets[attr] = dw
+            cl.addWidget(dw)
+            l3.addWidget(c)
+            
+        scroll_text.setWidget(p3_content)
+        main_p3_layout = QVBoxLayout(p3)
+        main_p3_layout.setContentsMargins(0, 0, 0, 0)
+        main_p3_layout.addWidget(scroll_text)
+        self.stack.addWidget(p3)
 
     def switch_page(self, i):
-        self.stack.setCurrentIndex(i); [b.setProperty("active", i == j) or b.style().unpolish(b) or b.style().polish(b) for j, b in enumerate([self.btn_home, self.btn_chem, self.btn_text])]
+        self.stack.setCurrentIndex(i)
+        buttons = [self.btn_home, self.btn_chem, self.btn_text]
+        for j, btn in enumerate(buttons):
+            btn.setProperty("active", i == j)
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
         self.results.hide()
 
     def do_search(self):
@@ -500,12 +685,15 @@ class CaBr3App(QMainWindow):
             
             self.table.setItem(r, 4, QTableWidgetItem("\n".join(dlg.in_hp.get_text_list())))
             self.table.setItem(r, 5, QTableWidgetItem("\n".join(dlg.in_info.get_text_list())))
-            self.table.blockSignals(False); self.sync_table()
+            self.table.blockSignals(False)
+            self.sync_table()
 
     def add_custom_substance(self):
         dlg = CustomSubstanceDialog(self)
         if dlg.exec():
-            self.table.blockSignals(True); r = self.table.rowCount(); self.table.insertRow(r)
+            self.table.blockSignals(True)
+            r = self.table.rowCount()
+            self.table.insertRow(r)
             self.table.setItem(r, 0, QTableWidgetItem("\n".join(dlg.in_name.get_text_list())))
             self.table.setItem(r, 1, QTableWidgetItem(dlg.in_mg.text() if dlg.in_mg.text() else "-"))
             self.table.setItem(r, 2, QTableWidgetItem("\n".join(dlg.in_sdp.get_text_list())))
@@ -516,15 +704,19 @@ class CaBr3App(QMainWindow):
             self.table.setItem(r, 4, QTableWidgetItem("\n".join(dlg.in_hp.get_text_list())))
             self.table.setItem(r, 5, QTableWidgetItem("\n".join(dlg.in_info.get_text_list())))
             self.table.setItem(r, 6, QTableWidgetItem(""))
-            self.table.blockSignals(False); self.sync_table()
+            self.table.blockSignals(False)
+            self.sync_table()
 
     def add_from_search(self, it):
         art = self.client.get_article(it.data(Qt.UserRole))
         if art:
             from gestis_parser import GestisParser
             p = GestisParser.parse_article(art)
-            if not p: return
-            self.table.blockSignals(True); r = self.table.rowCount(); self.table.insertRow(r)
+            if not p:
+                return
+            self.table.blockSignals(True)
+            r = self.table.rowCount()
+            self.table.insertRow(r)
             name_cas_formula = f"{p['name']}\n{p['cas']}\n{p['formula']}".strip()
             self.table.setItem(r, 0, QTableWidgetItem(name_cas_formula))
             mg_val = str(p['molar_mass']) if p['molar_mass'] else "-"
@@ -540,47 +732,63 @@ class CaBr3App(QMainWindow):
             info = f"{mak}\n{ld50}\n{p['wgk']}".strip()
             self.table.setItem(r, 5, QTableWidgetItem(info))
             self.table.setItem(r, 6, QTableWidgetItem(""))
-            for x in p['h_phrases'] + p['p_phrases']: self.hp_library[x['id']] = x['text']
+            for x in p['h_phrases'] + p['p_phrases']:
+                self.hp_library[x['id']] = x['text']
             
-            self.table.blockSignals(False); self.results.hide(); self.search_in.clear(); self.sync_table()
+            self.table.blockSignals(False)
+            self.results.hide()
+            self.search_in.clear()
+            self.sync_table()
 
     def sync_data(self):
         self.data.update({
-            "header": self.in_header.text(), "praktikum": self.in_praktikum.text(),
-            "assistent": self.in_assistent.text(), "name": self.in_name.text(),
-            "platz": self.in_platz.text(), "praeparat": self.in_praeparat.text()
+            "header": self.in_header.text(),
+            "praktikum": self.in_praktikum.text(),
+            "assistent": self.in_assistent.text(),
+            "name": self.in_name.text(),
+            "platz": self.in_platz.text(),
+            "praeparat": self.in_praeparat.text()
         })
         self.update_preview()
 
     def sync_table(self):
         self.data["stoffe"] = []
         for r in range(self.table.rowCount()):
-            row_data = {c: (self.table.item(r, i).text() if self.table.item(r, i) else "") for i, c in enumerate(["name", "mg", "sdp", "ghs", "hp", "info", "menge"])}
+            row_data = {}
+            for i, col in enumerate(["name", "mg", "sdp", "ghs", "hp", "info", "menge"]):
+                item = self.table.item(r, i)
+                row_data[col] = item.text() if item else ""
             self.data["stoffe"].append(row_data)
         self.update_preview()
 
     def sync_text(self):
-        self.data.update({a: dw.get_text_list() for a, dw in self.dyn_widgets.items()})
+        new_data = {}
+        for a, dw in self.dyn_widgets.items():
+            new_data[a] = dw.get_text_list()
+        self.data.update(new_data)
         self.update_preview()
 
     def update_preview(self):
         self.preview_timer.start(100)
 
     def _do_update_preview(self):
-        if not self.preview: return
+        if not self.preview:
+            return
         try:
             self.preview.setHtml(self.generate_html())
         except Exception as e:
             logging.error(f"Preview update failed: {e}")
 
     def clean_hp_text(self, text):
-        if not text: return ""
+        if not text:
+            return ""
         # Remove text in parentheses (like "Expositionsweg angeben...")
         text = re.sub(r'\(.*?\)', '', text)
         text = re.sub(r'\[.*?\]', '', text)
         text = re.sub(r'\s+', ' ', text).strip()
         text = re.sub(r'[:\s\.]+$', '', text)
-        if text and not text.endswith('.'): text += "."
+        if text and not text.endswith('.'):
+            text += "."
         return text
 
     def get_hp_text(self, is_h):
@@ -808,33 +1016,25 @@ class CaBr3App(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     
-    # Show splash screen IMMEDIATELEY
-    try:
-        base_p = sys._MEIPASS
-    except:
-        base_p = os.path.join(os.path.dirname(__file__), "..")
-    
-    # Try multiple possible logo paths
-    splash_path = os.path.abspath(os.path.join(base_p, "assets", "logo.png"))
+    # Show splash screen IMMEDIATELY
+    splash_path = get_resource_path("assets/splash.png")
     if not os.path.exists(splash_path):
-        splash_path = os.path.abspath(os.path.join(base_p, "assets", "splash.png"))
-
+        splash_path = get_resource_path("assets/logo.png")
+    
     splash = None
     if os.path.exists(splash_path):
         pixmap = QPixmap(splash_path)
-        splash = QSplashScreen(pixmap, Qt.WindowStaysOnTopHint)
-        splash.show()
-        splash.showMessage("Initialisiere CaBr3... 10%", Qt.AlignBottom | Qt.AlignLeft, Qt.white)
-        app.processEvents()
+        if not pixmap.isNull():
+            # For weak PCs, avoid complex flags if not needed, but StayOnTop is usually fine
+            splash = QSplashScreen(pixmap, Qt.WindowStaysOnTopHint)
+            splash.show()
+            splash.showMessage("Starte CaBr3...", Qt.AlignBottom | Qt.AlignLeft, Qt.white)
+            # Force processing to ensure splash is painted
+            for _ in range(10):
+                app.processEvents()
     
-    import logging
-    import time
+    # Delay main window creation slightly to allow splash to show
     start_time = time.time()
-    
-    if splash:
-        splash.showMessage("Lade UI Komponenten... 40%", Qt.AlignBottom | Qt.AlignLeft, Qt.white)
-        app.processEvents()
-        
     w = CaBr3App(splash, start_time)
     
     sys.exit(app.exec())

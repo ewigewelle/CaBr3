@@ -1,0 +1,23 @@
+[workspace]
+members = [
+  "webserver",
+  "crates/config",
+  "crates/error-ser",
+  "crates/load_save",
+  "crates/logger",
+  "crates/search",
+  "crates/types",
+  "frontend/src-tauri",
+  "frontend/src-wasm",
+]
+resolver = "2"
+
+[profile.release]
+panic = "abort"
+strip = true
+codegen-units = 1
+lto = true
+
+[profile.release.package.cabr2_wasm_lib]
+inherits = "release"
+opt-level = "s"

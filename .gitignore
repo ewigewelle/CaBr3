@@ -1,0 +1,40 @@
+# dotenv environment variables file
+.env
+.env.test
+.env*.local
+
+# IDEs and editors
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Crowdin Config
+crowdin.yml
+
+# Rust build folder
+target/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+app_python/build/
+app_python/dist/
+*.exe
+*.zip
+*.app

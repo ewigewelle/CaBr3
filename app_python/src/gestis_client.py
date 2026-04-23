@@ -1,4 +1,5 @@
 import logging
+import requests
 
 class GestisClient:
     BASE_URL = "https://gestis-api.dguv.de/api"
@@ -13,7 +14,6 @@ class GestisClient:
 
     def search(self, query, exact=False):
         """Search for a substance by name or CAS."""
-        import requests
         try:
             # Original code uses GET with query parameters
             # and search types like 'stoffname' or 'nummern' (for CAS)
@@ -42,7 +42,6 @@ class GestisClient:
 
     def get_article(self, zvg_number):
         """Fetch full article data by ZVG number."""
-        import requests
         try:
             zvg_formatted = str(zvg_number).zfill(6)
             url = f"{self.BASE_URL}/article/de/{zvg_formatted}"
