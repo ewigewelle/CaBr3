@@ -836,14 +836,19 @@ class CaBr3App(QMainWindow):
                     if b64_src:
                         ghs_imgs.append(f'<img src="{b64_src}" width="35" style="margin:2px;">')
             
+            name_br = s.get('name', '').replace('\n','<br>')
+            sdp_br = s.get('sdp', '').replace('\n','<br>')
+            hp_br = s.get('hp', '').replace(',','<br>').replace('\n','<br>')
+            info_br = s.get('info', '').replace('\n','<br>')
+            
             row = f"""
             <tr>
-                <td style='font-size:8pt;'>{s.get('name', '').replace('\n','<br>')}</td>
+                <td style='font-size:8pt;'>{name_br}</td>
                 <td align='center'>{s.get('mg', '-')}</td>
-                <td align='center' style='font-size:8pt;'>{s.get('sdp', '').replace('\n','<br>')}</td>
+                <td align='center' style='font-size:8pt;'>{sdp_br}</td>
                 <td align='center'>{''.join(ghs_imgs)}</td>
-                <td style='font-size:8pt;'>{s.get('hp', '').replace(',','<br>').replace('\n','<br>')}</td>
-                <td style='font-size:8pt;'>{s.get('info', '').replace('\n','<br>')}</td>
+                <td style='font-size:8pt;'>{hp_br}</td>
+                <td style='font-size:8pt;'>{info_br}</td>
                 <td align='center'>{s.get('menge', '')}</td>
             </tr>
             """
