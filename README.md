@@ -25,4 +25,4 @@ Hier können Sie die aktuellsten Versionen direkt herunterladen:
 
 ---
 
-*Dieses Programm basiert auf den ursprünglichen Grundzügen von CaBr2. Es kann bei der ersten Anwendung zu einer Reaktion von Defendersoftware (Speziell Windows Defender) kommen, jedoch habe ich versucht das möglichst zu unterbinden!*
+*Dieses Programm basiert auf den ursprünglichen Grundzügen von CaBr2. Es kann bei der ersten Anwendung zu einer Reaktion von Defendersoftware (Speziell Windows Defender) kommen, jedoch habe ich versucht das möglichst zu unterbinden! Diese Software benötigt zur Suche auf Gestis eine Internetverbindung.*
