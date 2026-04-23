@@ -19,6 +19,11 @@ a = Analysis(
 )
 pyz = PYZ(a.pure, block_cipher=block_cipher)
 
+# Only use icon if it exists to prevent build crash
+icon_path = 'assets/logo.png'
+if not os.path.exists(os.path.join('app', icon_path)) and not os.path.exists(icon_path):
+    icon_path = None
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -33,19 +38,19 @@ exe = EXE(
     upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['assets/logo.png'],
+    icon=icon_path,
 )
 
 if sys.platform == 'darwin':
     app = BUNDLE(
         exe,
         name='CaBr3.app',
-        icon='assets/logo.png',
+        icon=icon_path,
         bundle_identifier='com.ewigewelle.cabr3',
     )
