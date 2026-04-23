@@ -26,22 +26,22 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r app_python/requirements.txt
+        pip install -r app/requirements.txt
 
     - name: Build with PyInstaller
       run: |
-        cd app_python
+        cd app
         pyinstaller CaBr3-Generator.spec --clean --noconfirm
 
     - name: Package Artifact (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        powershell Compress-Archive -Path app_python/dist/CaBr3.exe -DestinationPath CaBr3-Windows.zip
+        powershell Compress-Archive -Path app/dist/CaBr3.exe -DestinationPath CaBr3-Windows.zip
 
     - name: Package Artifact (macOS)
       if: matrix.os == 'macos-latest'
       run: |
-        zip -r CaBr3-macOS.zip app_python/dist/CaBr3.app
+        zip -r CaBr3-macOS.zip app/dist/CaBr3.app
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4

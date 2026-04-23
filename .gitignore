@@ -1,40 +1,80 @@
-# dotenv environment variables file
-.env
-.env.test
-.env*.local
-
-# IDEs and editors
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.history/*
-
-# System Files
-.DS_Store
-Thumbs.db
-
-# Crowdin Config
-crowdin.yml
-
-# Rust build folder
-target/
-
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-app_python/build/
-app_python/dist/
+*.so
+*.pyd
+
+# C extensions
+*.so
+
+# Distribution / build
+bin/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypotheses/
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs
+.idea/
+.vscode/
+.history/
+*.swp
+*.swo
+
+# Project specific
+app/build/
+app/dist/
 *.exe
 *.zip
 *.app
+*.rar
+*.7z
+
+# macOS
+.DS_Store
